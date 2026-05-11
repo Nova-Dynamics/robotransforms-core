@@ -182,6 +182,75 @@ Build:
 cmake --build build
 ```
 
+Generate a single-header distribution file:
+
+```sh
+cmake --build build --target dist_header
+```
+
+That target writes:
+
+- `build/dist/robotransforms-core.hpp`
+- `build/dist/robotransforms-core-<version>.hpp`
+
+The generated dist header bakes in the configured version constants and bundles the current public core into a single file that is convenient to attach to a GitHub release.
+
+## Release Workflow
+
+This repository uses a tag-driven GitHub Actions release flow.
+
+The workflow is configured to trigger on pushes of tags matching:
+
+- `v*`
+
+That means tags such as:
+
+- `v0.2.0`
+- `v0.2.1`
+- `v1.0.0`
+
+will trigger the release workflow automatically.
+
+The workflow currently does the following:
+
+1. checks out the tagged commit
+2. configures the CMake build
+3. builds the test target
+4. runs the test suite
+5. builds the single-header dist output
+6. creates or updates the GitHub Release for that tag
+7. uploads the generated dist headers as release assets
+
+The generated release assets include:
+
+- `robotransforms-core.hpp`
+- `robotransforms-core-<project-version>.hpp`
+
+### Creating a release
+
+The intended release flow is:
+
+```sh
+git add .
+git commit -m "Release 0.2.0"
+git push origin main
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
+```
+
+Pushing the tag is what triggers GitHub Actions.
+
+### Tag format and versioning
+
+The workflow trigger uses Git tags beginning with `v`, while the project version inside the code is the numeric semantic version from `CMakeLists.txt`.
+
+In practice, the intended mapping is:
+
+- Git tag: `v0.2.0`
+- project version: `0.2.0`
+
+Those should be kept in sync for releases.
+
 ## Test
 
 Run the current test suite with:
