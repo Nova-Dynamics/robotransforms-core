@@ -44,6 +44,88 @@ The current public header is:
 
 The library is currently header-only and exposed through a CMake `INTERFACE` target named `robotransforms_euclidean`.
 
+## Naming And Conventions
+
+The transform names encode both the translation convention and the rotation parameterization.
+
+### `lr*` means `location then rotate`
+
+`lr*` transforms store the location of the terminal coordinate system's origin, expressed in the initial coordinate system, followed by a rotation from the initial coordinate system to the terminal coordinate system.
+
+In other words, an `lr*` transform answers:
+
+- where is the terminal origin, expressed in the initial frame?
+- how is the terminal frame rotated relative to the initial frame?
+
+The suffix indicates the rotation representation:
+
+- `lrQ`: full quaternion `[re, i, j, k]`
+- `lrq`: reduced quaternion `[i, j, k]` with positive real part implied
+- `lrrv`: rotation vector `[e1, e2, e3]`
+- `lre`: Euler angles `[yaw, pitch, roll]`
+
+Operationally, applying an `lr*` transform means subtracting the terminal location and then re-expressing the vector in the terminal coordinate system.
+
+### `sr*` means `shift then rotate`
+
+`sr*` transforms store the shift that must be applied to the initial coordinates to move them to the terminal origin, with that shift expressed in the initial coordinate system, followed by the rotation from the initial coordinate system to the terminal coordinate system.
+
+So for `sr*`:
+
+- the translation component is the shift to apply directly in the initial frame
+- the rotation component is still the rotation from the initial frame to the terminal frame
+
+This is why `sr*` and `lr*` are related, but they are not just different names for the same stored translation.
+
+### Rotations mean "the frame rotates, the vector stays put"
+
+Throughout this library, applying a rotation means the vector is treated as stationary while the coordinate system rotates, and the result is the vector re-expressed in the new coordinate system.
+
+So "apply a pitch of 10 degrees" means:
+
+- the coordinate system pitches up by 10 degrees
+- then the same geometric vector is written in that new coordinate system
+
+This is equivalent to what many other libraries describe as "unrotating" the vector.
+
+This convention is used consistently across quaternions, reduced quaternions, rotation vectors, Euler angles, rotation matrices, and homogeneous transforms.
+
+### Quaternion convention
+
+Quaternion rotation conventions are easy to mix up because `SU(2)` is a double cover of `SO(3)` and because authors differ on the sign convention for the imaginary terms.
+
+This library uses the convention where a rotated coordinate expression is computed as:
+
+`v' = q* [0, v] q`
+
+where:
+
+- `q*` is the quaternion conjugate
+- `[0, v]` is the pure imaginary quaternion built from the vector
+
+This choice is intentional because it makes quaternion composition read left-to-right in the library APIs:
+
+- the first rotation is on the left
+- the second rotation is on the right
+
+That same left-to-right composition rule is used throughout the transform composition helpers.
+
+### Euler angle convention
+
+Euler angles are always ordered as:
+
+- `yaw`
+- `pitch`
+- `roll`
+
+In this library the sign and axis conventions are:
+
+- `yaw` is a negative rotation around `z`
+- `pitch` is a positive rotation around `x`
+- `roll` is a positive rotation around `y`
+
+That convention is the one implemented by the Euclidean conversion and application helpers in this repository, and it should be preserved by downstream bindings.
+
 ## Usage
 
 Example:
