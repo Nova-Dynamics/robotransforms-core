@@ -1,0 +1,12 @@
+#pragma once
+
+#include <string_view>
+
+namespace robotransforms {
+
+inline constexpr int version_major = @robotransforms_core_VERSION_MAJOR@;
+inline constexpr int version_minor = @robotransforms_core_VERSION_MINOR@;
+inline constexpr int version_patch = @robotransforms_core_VERSION_PATCH@;
+inline constexpr std::string_view version_string = "@robotransforms_core_VERSION@";
+
+}  // namespace robotransforms

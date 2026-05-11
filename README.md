@@ -37,6 +37,7 @@ The current header provides:
 The current public header is:
 
 - `include/robotransforms/euclidean.hpp`
+- generated `robotransforms/version.hpp` during CMake configure
 
 The library is currently header-only and exposed through a CMake `INTERFACE` target named `robotransforms_euclidean`.
 
@@ -48,6 +49,7 @@ Example:
 #include <iostream>
 
 #include "robotransforms/euclidean.hpp"
+#include "robotransforms/version.hpp"
 
 namespace rt = robotransforms::euclidean;
 
@@ -58,6 +60,8 @@ int main() {
     auto local_point = rt::apply_lrQ(pose, point);
     auto inverse_pose = rt::invert_lrQ(pose);
     auto identity_pose = rt::compose_lrQ(pose, inverse_pose);
+
+    std::cout << robotransforms::version_string << "\n";
 
     std::cout << local_point[0] << ", "
               << local_point[1] << ", "
