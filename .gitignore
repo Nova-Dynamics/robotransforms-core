@@ -1,0 +1,18 @@
+# CMake build output
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/CTestTestfile.cmake
+/Testing/
+/Makefile
+/compile_commands.json
+
+# Local editor files
+/.vscode/
+/.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
