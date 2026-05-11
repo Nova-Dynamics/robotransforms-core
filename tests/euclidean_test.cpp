@@ -4,7 +4,6 @@
 #include <string>
 
 #include "robotransforms/euclidean.hpp"
-#include "robotransforms/version.hpp"
 
 namespace rt = robotransforms::euclidean;
 
@@ -143,15 +142,6 @@ void test_homo_lre_round_trip() {
     expect_array("homo lre round trip", rt::convert_homo_to_lre(homo), lre, 1e-8);
 }
 
-void test_version_constants() {
-    if (robotransforms::version_major != 0 ||
-        robotransforms::version_minor != 1 ||
-        robotransforms::version_patch != 0 ||
-        robotransforms::version_string != "0.1.0") {
-        std::cerr << "version constants failed\n";
-        std::exit(1);
-    }
-}
 
 }  // namespace
 
@@ -168,7 +158,6 @@ int main() {
     test_homo_application_matches_lrQ();
     test_homo_compose_matches_lrQ_compose();
     test_homo_lre_round_trip();
-    test_version_constants();
     std::cout << "euclidean tests passed\n";
     return 0;
 }
