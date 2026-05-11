@@ -42,6 +42,38 @@ void expect_array(const std::string& name, const std::array<double, N>& actual, 
     std::exit(1);
 }
 
+template <std::size_t R, std::size_t C>
+bool approx_matrix(const std::array<std::array<double, C>, R>& a, const std::array<std::array<double, C>, R>& b, double eps = 1e-9) {
+    for (std::size_t i = 0; i < R; ++i) {
+        if (!approx_array(a[i], b[i], eps)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <std::size_t R, std::size_t C>
+void expect_matrix(const std::string& name, const std::array<std::array<double, C>, R>& actual, const std::array<std::array<double, C>, R>& expected, double eps = 1e-9) {
+    if (approx_matrix(actual, expected, eps)) {
+        return;
+    }
+
+    std::cerr << name << " failed\n";
+    std::exit(1);
+}
+
+void test_euler_rotmat_round_trip() {
+    const rt::Euler<double> euler{0.3, -0.4, 0.2};
+    const auto matrix = rt::convert_euler_to_rotmat(euler);
+    expect_array("euler rotmat round trip", rt::convert_rotmat_to_euler(matrix), euler, 1e-8);
+}
+
+void test_rotmat_quat_round_trip() {
+    const rt::Quat<double> q{0.9238795325, 0.0, 0.3826834324, 0.0};
+    const auto matrix = rt::convert_quat_to_rotmat(q);
+    expect_array("rotmat quat round trip", rt::convert_rotmat_to_quat(matrix), q, 1e-8);
+}
+
 void test_lrQ_application_uses_location_subtraction() {
     const rt::LrQ<double> lrQ{1.0, 2.0, 3.0, 1.0, 0.0, 0.0, 0.0};
     const rt::Vec3<double> v{10.0, 20.0, 30.0};
@@ -83,6 +115,34 @@ void test_lrq_conversion_matches_application() {
     expect_array("apply_lrq matches converted lrQ", rt::apply_lrq(lrq, v), rt::apply_lrQ(lrQ, v), 1e-8);
 }
 
+void test_lre_conversion_matches_application() {
+    const rt::Lre<double> lre{1.0, -2.0, 0.5, 0.2, -0.1, 0.3};
+    const rt::Vec3<double> v{3.0, 4.0, -1.0};
+    const auto lrQ = rt::convert_lre_to_lrQ(lre);
+    expect_array("apply_lre matches converted lrQ", rt::apply_lre(lre, v), rt::apply_lrQ(lrQ, v), 1e-8);
+}
+
+void test_homo_application_matches_lrQ() {
+    const rt::LrQ<double> lrQ{0.5, -1.0, 2.0, 0.9238795325, 0.0, 0.0, 0.3826834324};
+    const rt::Vec3<double> v{4.0, 1.5, -2.0};
+    const auto homo = rt::convert_lrQ_to_homo(lrQ);
+    expect_array("apply_homo matches lrQ", rt::apply_homo(homo, v), rt::apply_lrQ(lrQ, v), 1e-8);
+}
+
+void test_homo_compose_matches_lrQ_compose() {
+    const rt::LrQ<double> lrQ1{0.5, -1.0, 2.0, 0.9238795325, 0.0, 0.0, 0.3826834324};
+    const rt::LrQ<double> lrQ2{-0.25, 1.2, 3.4, 0.8660254038, 0.0, 0.5, 0.0};
+    const auto expected = rt::convert_lrQ_to_homo(rt::compose_lrQ(lrQ1, lrQ2));
+    const auto actual = rt::compose_homo(rt::convert_lrQ_to_homo(lrQ1), rt::convert_lrQ_to_homo(lrQ2));
+    expect_matrix("compose_homo matches compose_lrQ", actual, expected, 1e-8);
+}
+
+void test_homo_lre_round_trip() {
+    const rt::Lre<double> lre{1.0, -2.0, 0.5, 0.2, -0.1, 0.3};
+    const auto homo = rt::convert_lre_to_homo(lre);
+    expect_array("homo lre round trip", rt::convert_homo_to_lre(homo), lre, 1e-8);
+}
+
 void test_version_constants() {
     if (robotransforms::version_major != 0 ||
         robotransforms::version_minor != 1 ||
@@ -96,12 +156,18 @@ void test_version_constants() {
 }  // namespace
 
 int main() {
+    test_euler_rotmat_round_trip();
+    test_rotmat_quat_round_trip();
     test_lrQ_application_uses_location_subtraction();
     test_lrrv_matches_lrQ_conversion();
     test_inverse_round_trip();
     test_compose_with_inverse_is_identity();
     test_quat_rotvec_round_trip();
     test_lrq_conversion_matches_application();
+    test_lre_conversion_matches_application();
+    test_homo_application_matches_lrQ();
+    test_homo_compose_matches_lrQ_compose();
+    test_homo_lre_round_trip();
     test_version_constants();
     std::cout << "euclidean tests passed\n";
     return 0;

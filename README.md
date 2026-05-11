@@ -28,11 +28,14 @@ Where those implementations disagreed, this repo intentionally follows the JS lo
 
 The current header provides:
 
+- Euler angle conversions and application
+- rotation-matrix conversions, application, inversion, and composition
+- homogeneous-matrix conversions, application, inversion, and composition
 - quaternion, reduced-quaternion, and rotation-vector conversions
 - quaternion, reduced-quaternion, and rotation-vector application
 - quaternion, reduced-quaternion, and rotation-vector inversion
 - quaternion, reduced-quaternion, and rotation-vector composition
-- `lrQ`, `lrq`, and `lrrv` conversion, application, inversion, and composition
+- `srq`, `sre`, `lrQ`, `lrq`, `lrrv`, and `lre` conversion, application, inversion, and composition
 
 The current public header is:
 
