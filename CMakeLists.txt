@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(robotransforms_core VERSION 0.2.1 LANGUAGES CXX)
+project(robotransforms_core VERSION 0.3.0 LANGUAGES CXX)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/robotransforms/version.hpp.in
