@@ -44,6 +44,15 @@ The current public header is:
 
 The library is currently header-only and exposed through a CMake `INTERFACE` target named `robotransforms_euclidean`.
 
+## Homogeneous Matrix Semantics
+
+`Homo<T>` is used in two different ways in the API, and they should not be conflated.
+
+- `apply_homo`, `compose_homo`, and `invert_homo` operate on arbitrary invertible 4x4 homogeneous matrices.
+- `convert_*_to_homo`, `convert_homo_to_*`, and `invert_homo_as_euclidean` assume the matrix is an SE(3) rigid transform with a rotation block in the upper-left 3x3, a translation in the final column, and bottom row `[0, 0, 0, 1]`.
+
+That means a general projective or affine 4x4 matrix can be applied, composed, and inverted through `Homo<T>`, but it should not be round-tripped through the Euclidean pose parameterizations.
+
 ## Naming And Conventions
 
 The transform names encode both the translation convention and the rotation parameterization.

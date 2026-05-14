@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <stdexcept>
 #include <type_traits>
 
 namespace robotransforms::euclidean {
@@ -19,6 +20,9 @@ using Euler = std::array<T, 3>;
 template <typename T>
 using RotMat = std::array<Vec3<T>, 3>;
 
+// Homo supports arbitrary 4x4 homogeneous matrices for apply/compose/invert.
+// Conversions between Homo and Euclidean pose parameterizations assume an SE(3)
+// rigid transform with bottom row [0, 0, 0, 1].
 template <typename T>
 using Homo = std::array<Vec4<T>, 4>;
 
@@ -206,6 +210,72 @@ inline Homo<T> make_homo(const RotMat<T>& rotation, const Vec3<T>& translation) 
         {rotation[2][0], rotation[2][1], rotation[2][2], translation[2]},
         {T(0), T(0), T(0), T(1)},
     }};
+}
+
+template <typename T>
+inline Homo<T> identity_homo() {
+    return {{
+        {T(1), T(0), T(0), T(0)},
+        {T(0), T(1), T(0), T(0)},
+        {T(0), T(0), T(1), T(0)},
+        {T(0), T(0), T(0), T(1)},
+    }};
+}
+
+template <typename T>
+inline void invert_homo_subblock(Homo<T>& matrix, Homo<T>& inverse, std::size_t offset) {
+    std::size_t pivot_row = offset;
+    while (pivot_row < matrix.size() && matrix[pivot_row][offset] == T(0)) {
+        ++pivot_row;
+    }
+
+    if (pivot_row == matrix.size()) {
+        throw std::runtime_error("Matrix is singular");
+    }
+
+    if (pivot_row != offset) {
+        const auto matrix_row = matrix[offset];
+        matrix[offset] = matrix[pivot_row];
+        matrix[pivot_row] = matrix_row;
+
+        const auto inverse_row = inverse[offset];
+        inverse[offset] = inverse[pivot_row];
+        inverse[pivot_row] = inverse_row;
+    }
+
+    const T scale = T(1) / matrix[offset][offset];
+    for (std::size_t i = 0; i < offset; ++i) {
+        inverse[offset][i] *= scale;
+    }
+    for (std::size_t i = offset; i < matrix.size(); ++i) {
+        matrix[offset][i] *= scale;
+        inverse[offset][i] *= scale;
+    }
+
+    for (std::size_t i = 0; i < matrix.size(); ++i) {
+        if (i == offset) {
+            continue;
+        }
+
+        const T factor = matrix[i][offset];
+        for (std::size_t j = 0; j < offset; ++j) {
+            inverse[i][j] -= factor * inverse[offset][j];
+        }
+        for (std::size_t j = offset; j < matrix.size(); ++j) {
+            matrix[i][j] -= factor * matrix[offset][j];
+            inverse[i][j] -= factor * inverse[offset][j];
+        }
+    }
+}
+
+template <typename T>
+inline Homo<T> invert_homo_matrix(const Homo<T>& matrix) {
+    auto working = matrix;
+    auto inverse = identity_homo<T>();
+    for (std::size_t i = 0; i < matrix.size(); ++i) {
+        invert_homo_subblock(working, inverse, i);
+    }
+    return inverse;
 }
 
 }  // namespace detail
@@ -581,6 +651,13 @@ inline Srq<T> invert_srq(const Srq<T>& srq) {
 
 template <typename T>
 inline Homo<T> invert_homo(const Homo<T>& matrix) {
+    return detail::invert_homo_matrix(matrix);
+}
+
+// This shortcut assumes the upper-left 3x3 block is a rotation matrix and the
+// final column is an Euclidean translation.
+template <typename T>
+inline Homo<T> invert_homo_as_euclidean(const Homo<T>& matrix) {
     const auto rotation = detail::rotmat_from_homo(matrix);
     const auto translation = detail::translation_from_homo(matrix);
     const auto inv_rotation = invert_rotmat(rotation);
@@ -633,6 +710,7 @@ inline Homo<T> convert_lre_to_homo(const Lre<T>& lre) {
     return detail::make_homo(rotation, translation);
 }
 
+// Homo-to-pose conversions assume matrix encodes an SE(3) rigid transform.
 template <typename T>
 inline Srq<T> convert_homo_to_srq(const Homo<T>& matrix) {
     const auto rotation = detail::rotmat_from_homo(matrix);

@@ -142,6 +142,36 @@ void test_homo_lre_round_trip() {
     expect_array("homo lre round trip", rt::convert_homo_to_lre(homo), lre, 1e-8);
 }
 
+void test_homo_invert_supports_arbitrary_matrix() {
+    const rt::Homo<double> matrix{{
+        {2.0, 1.0, 0.0, 3.0},
+        {0.0, 1.0, 4.0, -1.0},
+        {1.0, 0.0, 1.0, 2.0},
+        {0.0, 2.0, 0.0, 1.0},
+    }};
+    const rt::Homo<double> identity{{
+        {1.0, 0.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0, 0.0},
+        {0.0, 0.0, 1.0, 0.0},
+        {0.0, 0.0, 0.0, 1.0},
+    }};
+
+    const auto inverse = rt::invert_homo(matrix);
+    expect_matrix("generic invert_homo left identity", rt::compose_homo(matrix, inverse), identity, 1e-8);
+    expect_matrix("generic invert_homo right identity", rt::compose_homo(inverse, matrix), identity, 1e-8);
+}
+
+void test_homo_euclidean_shortcut_matches_rigid_inverse() {
+    const rt::LrQ<double> lrQ{0.5, -1.0, 2.0, 0.9238795325, 0.0, 0.0, 0.3826834324};
+    const auto homo = rt::convert_lrQ_to_homo(lrQ);
+    expect_matrix(
+        "euclidean homo shortcut matches generic inverse",
+        rt::invert_homo_as_euclidean(homo),
+        rt::invert_homo(homo),
+        1e-8
+    );
+}
+
 
 }  // namespace
 
@@ -158,6 +188,8 @@ int main() {
     test_homo_application_matches_lrQ();
     test_homo_compose_matches_lrQ_compose();
     test_homo_lre_round_trip();
+    test_homo_invert_supports_arbitrary_matrix();
+    test_homo_euclidean_shortcut_matches_rigid_inverse();
     std::cout << "euclidean tests passed\n";
     return 0;
 }
